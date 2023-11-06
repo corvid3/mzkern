@@ -1,0 +1,32 @@
+## process rings
+there are 4 "rings" which a process can fall in,
+	note that these are not the actual x86 rings, these are different
+ring 1 is the bare microkernel, managing ipc & scheduling & processes...
+ring 2 are device drivers (ext4 driver, graphics driver, etc)
+ring 3 are servers (network servers, filesystem server, etc)
+ring 4 are userland processes
+
+different rings have different priorities, and the relationship
+	between rings denotes some information (see ipc & scheduling)
+
+## system ipc
+different from userland ipc (posix pipes/sockes)
+
+data structures related to ipc:
+	const msgdatum = [4]const u64;
+		mapping to four registers, 32 bytes of data
+			can be transferred between two processes at a time
+	const pid = u64;
+
+there are two functions related to system ipc:
+	fn zmk_send(to_proc: pid, data: *msgdatum) void [blocking] 
+	fn zmk_recv(from_proc: ?pid, data: *msgdatum) pid [blocking] 
+		the pid returned is the pid that sent the message
+
+system ipc allows small messages to be sent from 
+	a higher ring process to a lower ring process,
+	and then the lower ring process directly replies back to the process
+note that this one way communication prevents deadlocks,
+	as communication must _always_ be commenced by one side, 
+		and ended by that side
+
